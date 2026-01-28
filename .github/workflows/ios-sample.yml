@@ -1,52 +1,40 @@
-name: Simple iOS IPA
+name: iOS IPA Node22
 on: [push]
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Install deps with npm install (ignore lock)
-        run: npm install --ignore-scripts=false
-      - name: Install Capacitor
-        run: npm i @capacitor/cli @capacitor/core @capacitor/ios
-      - name: Add iOS platform
-        run: npx cap add ios
-      - name: Copy web assets
-        run: npx cap copy ios
-      - name: Create export plist
+          node-version: '22'  # Capacitor 요구사항 충족
+          cache: 'npm'
+      - run: npm install
+      - run: npm i @capacitor/cli@latest @capacitor/core@latest @capacitor/ios@latest
+      - run: npx cap init babsikgu com.babsikgu.map --web-dir www || true
+      - run: npx cap add ios
+      - run: npx cap copy ios
+      - run: npx cap sync ios
+      - name: Export Plist
         run: |
-          mkdir -p ios/App
           cat > ios/App/export.plist << EOF
           <?xml version="1.0"?>
           <!DOCTYPE plist>
-          <plist version="1.0">
+          <plist>
           <dict>
-            <key>method</key>
-            <string>development</string>
+            <key>method</key><string>development</string>
           </dict>
           </plist>
           EOF
-      - name: Build IPA (unsigned)
+      - name: Archive & Export
         run: |
           cd ios/App
-          xcodebuild archive \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -destination generic/platform=iOS \
-            -archivePath ../archives/App.xcarchive \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
-          mkdir -p ../build
-          xcodebuild -exportArchive \
-            -archivePath ../archives/App.xcarchive \
-            -exportPath ../build \
-            -exportOptionsPlist export.plist
+          xcodebuild archive -workspace App.xcworkspace -scheme App \
+            -configuration Release CODE_SIGNING_ALLOWED=NO \
+            -archivePath ../App.xcarchive
+          xcodebuild -exportArchive -archivePath ../App.xcarchive \
+            -exportOptionsPlist export.plist -exportPath ../build
       - uses: actions/upload-artifact@v4
         with:
-          name: ios-ipa
+          name: final-ipa
           path: ios/build/*.ipa
