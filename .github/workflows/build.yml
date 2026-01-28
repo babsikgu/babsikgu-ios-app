@@ -2,41 +2,51 @@ name: Build Unsigned IPA
 on: [push]
 jobs:
   build:
-    runs-on: macos-latest  # 2026 최신 러너
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: 20}
+        with:
+          node-version: '20'
+          cache: 'npm'
       - run: npm ci
-      - run: npm run build || echo "build skip"
-      - uses: npx/cap/install-ios@4
-        if: success()
-      - run: npx cap sync ios || true
+      - run: npm run build || echo "No build script, skip"
+      - name: Install Capacitor CLI
+        run: npm install -g @capacitor/cli @capacitor/ios@latest
+      - name: Add iOS Platform
+        run: npx cap add ios
+      - name: Sync Capacitor
+        run: npx cap sync ios
       - name: Create free-export.plist
         run: |
-          cat > ios/App/free-export.plist << EOF
-          <?xml version="1.0"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN">
+          mkdir -p ios/App
+          cat > ios/App/free-export.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
             <key>method</key>
             <string>development</string>
+            <key>teamID</key>
+            <string></string>
           </dict>
           </plist>
           EOF
-      - name: Build IPA
+      - name: Build Unsigned IPA
         run: |
-          mkdir -p ios/build
           cd ios/App
-          xcode-select --print-path
           xcodebuild -workspace App.xcworkspace -scheme App \
-            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
-            -configuration Release -arch arm64 -sdk iphoneos \
-            -archivePath ../build/App.xcarchive clean archive || exit 1
-          xcodebuild -exportArchive -archivePath ../build/App.xcarchive \
-            -exportOptionsPlist ../free-export.plist -exportPath ../build
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            -arch arm64 -sdk iphoneos \
+            -derivedDataPath ../DerivedData \
+            clean archive -archivePath ../build/App.xcarchive
+          xcodebuild -exportArchive \
+            -archivePath ../build/App.xcarchive \
+            -exportOptionsPlist ../free-export.plist \
+            -exportPath ../build
       - uses: actions/upload-artifact@v4
         with:
-          name: babsikgu-ipa
+          name: babsikgu-ios-ipa
           path: ios/build/*.ipa
-          retention-days: 7
+          retention-days: 5
