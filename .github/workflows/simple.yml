@@ -19,14 +19,16 @@ jobs:
       - name: Build web assets
         run: npm run build
       
-      - name: Sync Capacitor
-        run: |
-          npx cap sync ios
+      - name: Add iOS platform
+        run: npx cap add ios
       
-      - name: List iOS project
+      - name: Sync Capacitor
+        run: npx cap sync ios
+      
+      - name: Install CocoaPods dependencies
         run: |
-          ls -la ios/App/
-          find ios/App -name "*.xcodeproj" -o -name "*.xcworkspace"
+          cd ios/App
+          pod install
       
       - name: Build iOS app
         run: |
