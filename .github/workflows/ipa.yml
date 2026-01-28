@@ -1,4 +1,4 @@
-name: iOS IPA Perfect
+name: iOS IPA Fixed
 on: [push]
 jobs:
   build:
