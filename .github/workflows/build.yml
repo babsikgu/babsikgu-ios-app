@@ -1,0 +1,24 @@
+name: Build Unsigned IPA
+on: [push]
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - run: npm ci
+      - run: npm run build || echo "No build script"
+      - uses: npx/cap/install-ios@4
+      - run: npx cap sync ios || true
+      - name: Build IPA
+        run: |
+          mkdir -p ios/build
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \
+            -configuration Release -archivePath ../build/App.xcarchive archive
+          xcodebuild -exportArchive -archivePath ../build/App.xcarchive \
+            -exportOptionsPlist ../free-export.plist -exportPath ../build
+      - uses: actions/upload-artifact@v4
+        with: {name: ipa, path: ios/build/*.ipa}
