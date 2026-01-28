@@ -9,7 +9,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-      - run: npm install  # ci → install로 변경! lock 파일 없어도 OK
+      - run: npm ci  # ci → install로 변경! lock 파일 없어도 OK
       - run: npm run build || echo "skip build"
       - name: Install Capacitor
         run: npm install -g @capacitor/cli @capacitor/core @capacitor/ios@latest
