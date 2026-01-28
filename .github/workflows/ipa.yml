@@ -1,2 +1,7 @@
-- name: Clean iOS Folder
-  run
+name: iOS IPA Perfect
+on: [push]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses
