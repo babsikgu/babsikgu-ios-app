@@ -1,5 +1,4 @@
-name: iOS IPA Build
+name: iOS IPA (Fixed)
 on: [push]
 jobs:
-  build:
-    runs-on
+  build
